@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kuis Biologi — Tebak Gambar</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --leaf: #2d6a4f;
+    --mint: #52b788;
+    --lime: #95d5b2;
+    --cream: #f8f5ee;
+    --dark: #1a2e22;
+    --warm: #e9c46a;
+    --red: #e76f51;
+    --white: #ffffff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background decoration */
+  body::before {
+    content: '';
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: 
+      radial-gradient(ellipse 60% 40% at 80% 10%, rgba(82,183,136,0.15) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 50% at 10% 80%, rgba(45,106,79,0.12) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .wrapper {
+    position: relative; z-index: 1;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  header .badge {
+    display: inline-block;
+    background: var(--leaf);
+    color: var(--lime);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 6px 18px;
+    border-radius: 100px;
+    margin-bottom: 16px;
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    font-weight: 900;
+    color: var(--dark);
+    line-height: 1.1;
+    letter-spacing: -1px;
+  }
+  header h1 span { color: var(--mint); }
+  header p {
+    margin-top: 12px;
+    color: #557060;
+    font-size: 1rem;
+  }
+
+  /* Score bar */
+  #scoreboard {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--dark);
+    color: var(--white);
+    border-radius: 16px;
+    padding: 16px 24px;
+    margin-bottom: 32px;
+    font-size: 0.9rem;
+  }
+  #scoreboard .stat { text-align: center; }
+  #scoreboard .stat strong { display: block; font-size: 1.5rem; font-weight: 700; color: var(--lime); }
+  #scoreboard .divider { width: 1px; height: 36px; background: rgba(255,255,255,0.15); }
+
+  /* Progress bar */
+  #progress-container {
+    background: rgba(45,106,79,0.15);
+    border-radius: 100px;
+    height: 6px;
+    margin-bottom: 32px;
+    overflow: hidden;
+  }
+  #progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--mint), var(--warm));
+    border-radius: 100px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  /* Quiz Card */
+  .quiz-card {
+    background: var(--white);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(26,46,34,0.1);
+    display: none;
+    animation: slideIn 0.4s cubic-bezier(0.22,1,0.36,1);
+  }
+  .quiz-card.active { display: block; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .card-image-wrap {
+    position: relative;
+    background: var(--dark);
+    height: 280px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .card-image-wrap .q-number {
+    position: absolute; top: 16px; left: 16px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(8px);
+    color: var(--white);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 6px 14px;
+    border-radius: 100px;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .bio-icon {
+    font-size: 110px;
+    line-height: 1;
+    filter: drop-shadow(0 8px 24px rgba(0,0,0,0.4));
+    transition: transform 0.3s ease;
+  }
+  .card-image-wrap:hover .bio-icon { transform: scale(1.05) rotate(-3deg); }
+  .card-image-wrap .hint-badge {
+    position: absolute; bottom: 16px; right: 16px;
+    background: rgba(233,196,106,0.9);
+    color: var(--dark);
+    font-size: 11px; font-weight: 600;
+    padding: 5px 12px; border-radius: 100px;
+  }
+
+  .card-body {
+    padding: 28px 32px 32px;
+  }
+  .card-body h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    color: var(--dark);
+    margin-bottom: 20px;
+    line-height: 1.4;
+  }
+
+  /* Input */
+  .input-row {
+    display: flex; gap: 12px; align-items: center;
+    margin-bottom: 16px;
+  }
+  .answer-input {
+    flex: 1;
+    border: 2px solid #dde8e0;
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-size: 1rem;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--dark);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: var(--cream);
+  }
+  .answer-input:focus {
+    border-color: var(--mint);
+    box-shadow: 0 0 0 4px rgba(82,183,136,0.15);
+    background: var(--white);
+  }
+  .answer-input.correct {
+    border-color: var(--mint);
+    background: rgba(82,183,136,0.08);
+    color: var(--leaf);
+  }
+  .answer-input.wrong {
+    border-color: var(--red);
+    background: rgba(231,111,81,0.08);
+    color: var(--red);
+  }
+
+  .btn-submit {
+    background: var(--leaf);
+    color: var(--white);
+    border: none; cursor: pointer;
+    border-radius: 12px;
+    padding: 14px 24px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    transition: background 0.2s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .btn-submit:hover { background: #1f4d38; }
+  .btn-submit:active { transform: scale(0.97); }
+  .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Feedback */
+  .feedback {
+    display: none;
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .feedback.correct {
+    background: rgba(82,183,136,0.12);
+    color: var(--leaf);
+    border: 1px solid rgba(82,183,136,0.3);
+    display: block;
+  }
+  .feedback.wrong {
+    background: rgba(231,111,81,0.1);
+    color: #c0392b;
+    border: 1px solid rgba(231,111,81,0.25);
+    display: block;
+  }
+
+  .btn-next {
+    display: none;
+    width: 100%;
+    background: linear-gradient(135deg, var(--mint), var(--leaf));
+    color: var(--white);
+    border: none; cursor: pointer;
+    border-radius: 12px;
+    padding: 15px;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    transition: opacity 0.2s, transform 0.1s;
+    letter-spacing: 0.3px;
+  }
+  .btn-next:hover { opacity: 0.9; }
+  .btn-next:active { transform: scale(0.98); }
+
+  /* Hint toggle */
+  .hint-toggle {
+    background: none; border: none; cursor: pointer;
+    color: #7a9e8a;
+    font-size: 0.85rem;
+    font-family: 'DM Sans', sans-serif;
+    padding: 0;
+    text-decoration: underline;
+    margin-bottom: 16px;
+    display: block;
+  }
+  .hint-text {
+    display: none;
+    background: rgba(233,196,106,0.15);
+    border: 1px solid rgba(233,196,106,0.4);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    color: #7a5c00;
+    margin-bottom: 16px;
+  }
+
+  /* Result Screen */
+  #result-screen {
+    display: none;
+    text-align: center;
+    background: var(--white);
+    border-radius: 24px;
+    padding: 56px 32px;
+    box-shadow: 0 8px 40px rgba(26,46,34,0.1);
+    animation: slideIn 0.5s cubic-bezier(0.22,1,0.36,1);
+  }
+  #result-screen .big-emoji { font-size: 80px; margin-bottom: 16px; }
+  #result-screen h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.2rem;
+    color: var(--dark);
+    margin-bottom: 8px;
+  }
+  #result-screen p { color: #557060; margin-bottom: 24px; font-size: 1rem; }
+  #result-screen .final-score {
+    font-size: 3.5rem;
+    font-weight: 900;
+    color: var(--leaf);
+    font-family: 'Playfair Display', serif;
+    margin: 8px 0 4px;
+  }
+  #result-screen .score-label { font-size: 0.9rem; color: #7a9e8a; margin-bottom: 32px; }
+  .btn-restart {
+    background: var(--leaf);
+    color: var(--white);
+    border: none; cursor: pointer;
+    border-radius: 14px;
+    padding: 16px 40px;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    transition: background 0.2s;
+  }
+  .btn-restart:hover { background: #1f4d38; }
+
+  /* BG color variants per card */
+  .bg-forest { background: linear-gradient(135deg, #1a2e22 0%, #2d6a4f 100%); }
+  .bg-ocean  { background: linear-gradient(135deg, #0d3b52 0%, #1a7aa1 100%); }
+  .bg-earth  { background: linear-gradient(135deg, #3d1f00 0%, #8b5e3c 100%); }
+  .bg-sky    { background: linear-gradient(135deg, #0a1628 0%, #1e4d8c 100%); }
+  .bg-flower { background: linear-gradient(135deg, #4a0025 0%, #c0254e 100%); }
+  .bg-night  { background: linear-gradient(135deg, #1a0a2e 0%, #4a2080 100%); }
+  .bg-sun    { background: linear-gradient(135deg, #3d2900 0%, #cc8800 100%); }
+  .bg-red    { background: linear-gradient(135deg, #2e0a0a 0%, #8b0000 100%); }
+  .bg-teal   { background: linear-gradient(135deg, #003333 0%, #007f7f 100%); }
+  .bg-moss   { background: linear-gradient(135deg, #1a2200 0%, #3d5c00 100%); }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <header>
+    <div class="badge">🌿 Ilmu Biologi</div>
+    <h1>Kuis <span>Biologi</span><br>Tebak Gambar</h1>
+    <p>Lihat gambar, lalu ketik jawabanmu dalam Bahasa Indonesia!</p>
+  </header>
+
+  <div id="scoreboard">
+    <div class="stat"><strong id="score-val">0</strong>Skor</div>
+    <div class="divider"></div>
+    <div class="stat"><strong id="correct-val">0</strong>Benar</div>
+    <div class="divider"></div>
+    <div class="stat"><strong id="wrong-val">0</strong>Salah</div>
+    <div class="divider"></div>
+    <div class="stat"><strong id="q-val">0/10</strong>Soal</div>
+  </div>
+
+  <div id="progress-container"><div id="progress-bar"></div></div>
+
+  <!-- SOAL-SOAL -->
+
+  <!-- Q1 -->
+  <div class="quiz-card active" data-index="0">
+    <div class="card-image-wrap bg-forest">
+      <span class="q-number">Soal 1 / 10</span>
+      <span class="bio-icon">🦠</span>
+      <span class="hint-badge">Mikrobiologi</span>
+    </div>
+    <div class="card-body">
+      <h2>Organisme bersel tunggal yang tidak memiliki inti sel sejati (prokariotik) dan dapat menyebabkan berbagai penyakit pada manusia. Apa nama organisme ini?</h2>
+      <div class="input-row">
+        <input class="answer-input" type="text" placeholder="Ketik jawabanmu..." autocomplete="off">
+        <button class="btn-submit" onclick="checkAnswer(0)">Jawab</button>
+      </div>
+      <button class="hint-toggle" onclick="toggleHint(0)">💡 Tampilkan petunjuk</button>
+      <div class="hint-text">Organisme ini ditemukan oleh Antoni van Leeuwenhoek. Contohnya: <em>E. coli</em>, <em>Salmonella</em>.</div>
+      <div class="feedback"></div>
+      <button class="btn-next" onclick="nextQuestion(0)">Soal Berikutnya →</button>
+    </div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-card" data-index="1">
+    <div class="card-image-wrap bg-forest">
+      <span class="q-number">Soal 2 / 10</span>
+      <span class="bio-icon">🍃</span>
+      <span class="hint-badge">Botani</span>
+    </div>
+    <div class="card-body">
+      <h2>Proses yang dilakukan tumbuhan untuk mengubah cahaya matahari, air, dan karbon dioksida menjadi glukosa dan oksigen. Apa nama proses ini?</h2>
+      <div class="input-row">
+        <input class="answer-input" type="text" placeholder="Ketik jawabanmu..." autocomplete="off">
+        <button class="btn-submit" onclick="checkAnswer(1)">Jawab</button>
+      </div>
+      <button class="hint-toggle" onclick="toggleHint(1)">💡 Tampilkan petunjuk</button>
+      <div class="hint-text">Proses ini terjadi di dalam kloroplas daun dan menghasilkan O₂ sebagai produk sampingan.</div>
+      <div class="feedback"></div>
+      <button class="btn-next" onclick="nextQuestion(1)">Soal Berikutnya →</button>
+    </div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-card" data-index="2">
+    <div class="card-image-wrap bg-ocean">
+      <span class="q-number">Soal 3 / 10</span>
+      <span class="bio-icon">🐠</span>
+      <span class="hint-badge">Zoologi</span>
+    </div>
+    <div class="card-body">
+      <h2>Hewan bertulang belakang yang bernapas menggunakan insang, hidup di air, dan tubuhnya ditutupi sisik. Apa kelas hewan ini?</h2>
+      <div class="input-row">
+        <input class="answer-input" type="text" placeholder="Ketik jawabanmu..." autocomplete="off">
+        <button class="btn-submit" onclick="checkAnswer(2)">Jawab</button>
+      </div>
+      <button class="hint-toggle" onclick="toggleHint(2)">💡 Tampilkan petunjuk</button>
+      <div class="hint-text">Kelas ini termasuk dalam Vertebrata. Contoh: gurame, lele, nila.</div>
+      <div class="feedback"></div>
+      <button class="btn-next" onclick="nextQuestion(2)">Soal Berikutnya →</button>
+    </div>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-card" data-index="3">
+    <div class="card-image-wrap bg-earth">
+      <span class="q-number">Soal 4 / 10</span>
+      <span class="bio-icon">🧬</span>
+      <span class="hint-badge">Genetika</span>
+    </div>
+    <div class="card-body">
+      <h2>Molekul berbentuk tangga spiral ganda yang menyimpan informasi genetik seluruh makhluk hidup. Apa singkatan nama molekul ini?</h2>
+      <div class="input-row">
+        <input class="answer-input" type="text" placeholder="Ketik jawabanmu..." autocomplete="off">
+        <button class="btn-submit" onclick="checkAnswer(3)">Jawab</button>
+      </div>
+      <button class="hint-toggle" onclick="toggleHint(3)">💡 Tampilkan petunjuk</button>
+      <div class="hint-text">Strukturnya ditemukan oleh Watson dan Crick. Terdiri dari basa nitrogen A, T, G, dan C.</div>
+      <div class="feedback"></div>
+      <button class="btn-next" onclick="nextQuestion(3)">Soal Berikutnya →</button>
+    </div>
+  </div>
+
+  <!-- Q5 -->
+  <div class="quiz-card" data-index="4">
+    <div class="card-image-wrap bg-sky">
+      <span class="q-number">Soal 5 / 10</span>
+      <span class="bio-icon">🦋</span>
+      <span class="hint-badge">Entomologi</span>
+    </div>
+    <div class="card-body">
+      <h2>Siklus perkembangan serangga yang melalui empat tahap: telur → ulat → kepompong → dewasa. Istilah apa yang digunakan untuk siklus perkembangan ini?</h2>
+      <div class="input-row">
+        <input class="answer-input" type="text" placeholder="Ketik jawabanmu..." autocomplete="off">
+        <button class="btn-submit" onclick="checkAnswer(4)">Jawab</button>
+      </div>
+      <button class="hint-toggle" onclick="toggleHint(4)">💡 Tampilkan petunjuk</button>
+      <div class="hint-text">Dalam bahasa Inggris disebut "metamorphosis". Ada dua jenis: sempurna dan tidak sempurna.</div>
+      <div class="feedback"></div>
+      <button class="btn-next" onclick="nextQuestion(4)">Soal Berikutnya →</button>
+    </div>
+  </div>
+
+  <!-- Q6 -->
+  <div class="quiz-card" data-index="5">
+    <div class="card-image-wrap bg-flower">
+      <span class="q-number">Soal 6 / 10</span>
+      <span class="bio-icon">🌸</span>
+      <span class="hint-badge">Botani</span>
+    </div>
+    <div class="card-body">
+      <h2>Bagian bunga yang berfungsi sebagai alat kelamin betina dan terdiri dari kepala putik, tangkai putik, dan bakal buah. Apa nama bagian bunga ini?</h2>
+      <div class="input-row">
+        <input class="answer-input" type="text" placeholder="Ketik jawabanmu..." autocomplete="off">
+        <button class="btn-submit" onclick="checkAnswer(5)">Jawab</button>
+      </div>
+      <button class="hint-toggle" onclick="toggleHint(5)">💡 Tampilkan petunjuk</button>
+      <div class="hint-text">Lawan kata dari benang sari (alat kelamin jantan). Di puncaknya terdapat stigma.</div>
+      <div class="feedback"></div>
+      <button class="btn-next" onclick="nextQuestion(5)">Soal Berikutnya →</button>
+    </div>
+  </div>
+
+  <!-- Q7 -->
+  <div class="quiz-card" data-index="6">
+    <div class="card-image-wrap bg-night">
+      <span class="q-number">Soal 7 / 10</span>
+      <span class="bio-icon">🦇</span>
+      <span class="hint-badge">Zoologi</span>
+    </div>
+    <div class="card-body">
+      <h2>Satu-satunya mamalia yang bisa terbang. Hewan ini aktif pada malam hari dan menggunakan gelombang suara untuk navigasi. Apa nama hewan ini?</h2>
+      <div class="input-row">
+        <input class="answer-input" type="text" placeholder="Ketik jawabanmu..." autocomplete="off">
+        <button class="btn-submit" onclick="checkAnswer(6)">Jawab</button>
+      </div>
+      <button class="hint-toggle" onclick="toggleHint(6)">💡 Tampilkan petunjuk</button>
+      <div class="hint-text">Kemampuan navigasinya disebut ekolokasi. Sering tinggal di gua-gua.</div>
+      <div class="feedback"></div>
+      <button class="btn-next" onclick="nextQuestion(6)">Soal Berikutnya →</button>
+    </div>
+  </div>
+
+  <!-- Q8 -->
+  <div class="quiz-card" data-index="7">
+    <div class="card-image-wrap bg-sun">
+      <span class="q-number">Soal 8 / 10</span>
+      <span class="bio-icon">🌻</span>
+      <span class="hint-badge">Botani</span>
+    </div>
+    <div class="card-body">
+      <h2>Gerakan tumbuhan yang terjadi akibat rangsangan cahaya, di mana bagian tanaman tumbuh mengarah ke sumber cahaya. Apa nama gerakan tumbuhan ini?</h2>
+      <div class="input-row">
+        <input class="answer-input" type="text" placeholder="Ketik jawabanmu..." autocomplete="off">
+        <button class="btn-submit" onclick="checkAnswer(7)">Jawab</button>
+      </div>
+      <button class="hint-toggle" onclick="toggleHint(7)">💡 Tampilkan petunjuk</button>
+      <div class="hint-text">Bunga matahari adalah contoh klasik. "Photo" = cahaya, "tropism" = gerakan arah.</div>
+      <div class="feedback"></div>
+      <button class="btn-next" onclick="nextQuestion(7)">Soal Berikutnya →</button>
+    </div>
+  </div>
+
+  <!-- Q9 -->
+  <div class="quiz-card" data-index="8">
+    <div class="card-image-wrap bg-red">
+      <span class="q-number">Soal 9 / 10</span>
+      <span class="bio-icon">🩸</span>
+      <span class="hint-badge">Anatomi</span>
+    </div>
+    <div class="card-body">
+      <h2>Sel darah merah yang berfungsi mengangkut oksigen ke seluruh tubuh dan mengandung protein bernama hemoglobin. Apa nama sel darah ini?</h2>
+      <div class="input-row">
+        <input class="answer-input" type="text" placeholder="Ketik jawabanmu..." autocomplete="off">
+        <button class="btn-submit" onclick="checkAnswer(8)">Jawab</button>
+      </div>
+      <button class="hint-toggle" onclick="toggleHint(8)">💡 Tampilkan petunjuk</button>
+      <div class="hint-text">Dalam bahasa Inggris disebut "Red Blood Cell" (RBC) atau "Erythrocyte".</div>
+      <div class="feedback"></div>
+      <button class="btn-next" onclick="nextQuestion(8)">Soal Berikutnya →</button>
+    </div>
+  </div>
+
+  <!-- Q10 -->
+  <div class="quiz-card" data-index="9">
+    <div class="card-image-wrap bg-teal">
+      <span class="q-number">Soal 10 / 10</span>
+      <span class="bio-icon">🐢</span>
+      <span class="hint-badge">Herpetologi</span>
+    </div>
+    <div class="card-body">
+      <h2>Hewan berdarah dingin (ektotermik) yang tubuhnya ditutupi sisik kering, bernapas dengan paru-paru, dan berkembang biak dengan bertelur. Apa nama kelompok hewan ini?</h2>
+      <div class="input-row">
+        <input class="answer-input" type="text" placeholder="Ketik jawabanmu..." autocomplete="off">
+        <button class="btn-submit" onclick="checkAnswer(9)">Jawab</button>
+      </div>
+      <button class="hint-toggle" onclick="toggleHint(9)">💡 Tampilkan petunjuk</button>
+      <div class="hint-text">Contohnya: buaya, ular, kura-kura, komodo. Dalam bahasa Latin berarti "merayap".</div>
+      <div class="feedback"></div>
+      <button class="btn-next" onclick="nextQuestion(9)">Selesai →</button>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div id="result-screen">
+    <div class="big-emoji" id="result-emoji">🏆</div>
+    <h2 id="result-title">Luar Biasa!</h2>
+    <p id="result-desc">Kamu sudah menyelesaikan semua soal.</p>
+    <div class="final-score" id="final-score">0</div>
+    <div class="score-label" id="score-label">dari 100 poin</div>
+    <br>
+    <button class="btn-restart" onclick="restartQuiz()">🔄 Coba Lagi</button>
+  </div>
+
+</div>
+
+<script>
+const answers = [
+  ["bakteri"],
+  ["fotosintesis"],
+  ["ikan", "pisces"],
+  ["dna"],
+  ["metamorfosis", "metamorphosis"],
+  ["putik"],
+  ["kelelawar"],
+  ["fototropisme", "gerak fototropisme"],
+  ["eritrosit", "sel darah merah"],
+  ["reptil", "reptilia"]
+];
+
+const correctMessages = [
+  "✅ Tepat sekali! Bakteri adalah organisme prokariotik yang tidak punya inti sel sejati.",
+  "✅ Benar! Fotosintesis menggunakan energi cahaya untuk menghasilkan glukosa (C₆H₁₂O₆).",
+  "✅ Correct! Ikan (Pisces) adalah vertebrata akuatik berinsang.",
+  "✅ Bravo! DNA (Deoxyribonucleic Acid) adalah cetak biru kehidupan.",
+  "✅ Tepat! Metamorfosis sempurna (holometabola) terdiri dari 4 fase: telur, larva, pupa, imago.",
+  "✅ Benar! Putik adalah alat kelamin betina bunga, terdiri dari stigma, stilus, dan ovarium.",
+  "✅ Tepat! Kelelawar adalah satu-satunya mamalia yang mampu terbang aktif.",
+  "✅ Correct! Fototropisme positif: tumbuhan bergerak menuju cahaya karena distribusi auksin yang tidak merata.",
+  "✅ Benar! Eritrosit berbentuk cakram bikonkaf dan tidak memiliki inti sel saat dewasa.",
+  "✅ Tepat! Reptilia adalah hewan ektotermik dengan kulit bersisik yang bernapas dengan paru-paru."
+];
+
+const wrongMessages = [
+  "❌ Jawaban kurang tepat. Jawaban yang benar: <strong>Bakteri</strong>.",
+  "❌ Jawaban kurang tepat. Jawaban yang benar: <strong>Fotosintesis</strong>.",
+  "❌ Jawaban kurang tepat. Jawaban yang benar: <strong>Ikan / Pisces</strong>.",
+  "❌ Jawaban kurang tepat. Jawaban yang benar: <strong>DNA</strong>.",
+  "❌ Jawaban kurang tepat. Jawaban yang benar: <strong>Metamorfosis</strong>.",
+  "❌ Jawaban kurang tepat. Jawaban yang benar: <strong>Putik</strong>.",
+  "❌ Jawaban kurang tepat. Jawaban yang benar: <strong>Kelelawar</strong>.",
+  "❌ Jawaban kurang tepat. Jawaban yang benar: <strong>Fototropisme</strong>.",
+  "❌ Jawaban kurang tepat. Jawaban yang benar: <strong>Eritrosit / Sel Darah Merah</strong>.",
+  "❌ Jawaban kurang tepat. Jawaban yang benar: <strong>Reptil / Reptilia</strong>."
+];
+
+let score = 0, correctCount = 0, wrongCount = 0, currentQ = 0;
+
+function normalize(str) {
+  return str.toLowerCase().trim()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, "");
+}
+
+function checkAnswer(index) {
+  const card = document.querySelectorAll('.quiz-card')[index];
+  const input = card.querySelector('.answer-input');
+  const feedback = card.querySelector('.feedback');
+  const btnSubmit = card.querySelector('.btn-submit');
+  const btnNext = card.querySelector('.btn-next');
+  const userAns = normalize(input.value);
+
+  if (!userAns) { input.focus(); return; }
+
+  btnSubmit.disabled = true;
+  input.disabled = true;
+
+  const isCorrect = answers[index].some(a => normalize(a) === userAns || userAns.includes(normalize(a)) || normalize(a).includes(userAns));
+
+  if (isCorrect) {
+    input.classList.add('correct');
+    feedback.className = 'feedback correct';
+    feedback.innerHTML = correctMessages[index];
+    score += 10;
+    correctCount++;
+    document.getElementById('score-val').textContent = score;
+    document.getElementById('correct-val').textContent = correctCount;
+  } else {
+    input.classList.add('wrong');
+    feedback.className = 'feedback wrong';
+    feedback.innerHTML = wrongMessages[index];
+    wrongCount++;
+    document.getElementById('wrong-val').textContent = wrongCount;
+  }
+
+  btnNext.style.display = 'block';
+  currentQ++;
+  document.getElementById('q-val').textContent = currentQ + '/10';
+  document.getElementById('progress-bar').style.width = (currentQ * 10) + '%';
+}
+
+function nextQuestion(index) {
+  const cards = document.querySelectorAll('.quiz-card');
+  cards[index].classList.remove('active');
+
+  if (index + 1 < cards.length) {
+    cards[index + 1].classList.add('active');
+    cards[index + 1].querySelector('.answer-input').focus();
+  } else {
+    showResult();
+  }
+}
+
+function toggleHint(index) {
+  const card = document.querySelectorAll('.quiz-card')[index];
+  const hint = card.querySelector('.hint-text');
+  const btn = card.querySelector('.hint-toggle');
+  if (hint.style.display === 'block') {
+    hint.style.display = 'none';
+    btn.textContent = '💡 Tampilkan petunjuk';
+  } else {
+    hint.style.display = 'block';
+    btn.textContent = '🙈 Sembunyikan petunjuk';
+  }
+}
+
+function showResult() {
+  document.querySelectorAll('.quiz-card').forEach(c => c.style.display = 'none');
+  const rs = document.getElementById('result-screen');
+  rs.style.display = 'block';
+  document.getElementById('final-score').textContent = score;
+
+  let emoji, title, desc;
+  if (score === 100) {
+    emoji = '🏆'; title = 'Sempurna!'; desc = 'Kamu luar biasa! Skor penuh tanpa kesalahan. Biolog sejati!';
+  } else if (score >= 70) {
+    emoji = '🌟'; title = 'Hebat!'; desc = 'Pengetahuan biologimu sangat baik. Terus belajar!';
+  } else if (score >= 40) {
+    emoji = '📚'; title = 'Lumayan!'; desc = 'Tidak buruk! Masih ada ruang untuk belajar lebih.';
+  } else {
+    emoji = '🌱'; title = 'Jangan Menyerah!'; desc = 'Setiap ahli biologi pernah menjadi pemula. Coba lagi!';
+  }
+
+  document.getElementById('result-emoji').textContent = emoji;
+  document.getElementById('result-title').textContent = title;
+  document.getElementById('result-desc').textContent = desc;
+  document.getElementById('score-label').textContent = `dari 100 poin · ${correctCount} benar, ${wrongCount} salah`;
+}
+
+function restartQuiz() {
+  score = 0; correctCount = 0; wrongCount = 0; currentQ = 0;
+  document.getElementById('score-val').textContent = 0;
+  document.getElementById('correct-val').textContent = 0;
+  document.getElementById('wrong-val').textContent = 0;
+  document.getElementById('q-val').textContent = '0/10';
+  document.getElementById('progress-bar').style.width = '0%';
+  document.getElementById('result-screen').style.display = 'none';
+
+  const cards = document.querySelectorAll('.quiz-card');
+  cards.forEach((c, i) => {
+    c.style.display = '';
+    c.classList.remove('active');
+    const inp = c.querySelector('.answer-input');
+    inp.value = '';
+    inp.disabled = false;
+    inp.className = 'answer-input';
+    c.querySelector('.btn-submit').disabled = false;
+    c.querySelector('.btn-next').style.display = 'none';
+    c.querySelector('.feedback').className = 'feedback';
+    c.querySelector('.hint-text').style.display = 'none';
+    c.querySelector('.hint-toggle').textContent = '💡 Tampilkan petunjuk';
+  });
+  cards[0].classList.add('active');
+}
+
+// Enter key support
+document.querySelectorAll('.answer-input').forEach((inp, i) => {
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const card = inp.closest('.quiz-card');
+      const btnNext = card.querySelector('.btn-next');
+      if (btnNext.style.display === 'block') nextQuestion(i);
+      else checkAnswer(i);
+    }
+  });
+});
+</script>
+</body>
+</html>
